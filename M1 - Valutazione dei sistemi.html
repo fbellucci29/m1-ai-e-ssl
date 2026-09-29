@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M1 - Valutazione dei sistemi</title>
+<style>
+  :root{
+    --bg:#eef1f5; --paper:#fff; --ink:#1f2733; --muted:#5b6673; --line:#d5dbe3;
+    --accent:#1f4e79; --accent-soft:#eaf1f8; --ok:#1a7f4b; --ok-bg:#e7f5ec;
+    --err:#c0261e; --err-bg:#fbeae9; --fieldbg:#fbfcfe;
+    --xls:#217346; --xls-head:#e8efe9; --xls-line:#c6c6c6; --xls-num:#f2f2f2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.5;padding:22px 14px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:900px;margin:0 auto;}
+  .sheet{background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    box-shadow:0 6px 24px rgba(20,40,70,.08);margin-bottom:20px;}
+  .top{background:var(--accent);color:#fff;padding:18px 26px;}
+  .top .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;}
+  .top h1{margin:4px 0 0;font-size:20px;font-weight:650;}
+  .body{padding:20px 26px 26px;}
+  h2.sec{font-size:16px;color:var(--accent);border-bottom:2px solid var(--accent-soft);
+    padding-bottom:6px;margin:6px 0 14px;}
+  .legend{background:var(--accent-soft);border-left:4px solid var(--accent);padding:12px 15px;
+    border-radius:6px;font-size:13.5px;margin-bottom:18px;}
+  .legend b{color:var(--accent);}
+  .sys{border:1px solid var(--line);border-radius:9px;padding:14px 16px;margin-bottom:14px;background:var(--fieldbg);}
+  .sys h3{margin:0 0 4px;font-size:15px;}
+  .sys .desc{font-size:13.5px;color:var(--muted);margin-bottom:12px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:600px){.grid2{grid-template-columns:1fr;}}
+  label.f{display:block;font-size:13px;font-weight:600;margin-bottom:5px;}
+  select{width:100%;padding:9px 10px;font-size:14px;border:1px solid var(--line);border-radius:6px;
+    background:#fff;color:var(--ink);font-family:inherit;}
+  select:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+  .cell{border-radius:6px;padding:2px;}
+  .cell.correct{box-shadow:0 0 0 2px var(--ok);} .cell.wrong{box-shadow:0 0 0 2px var(--err);}
+  .fb{font-size:12.5px;margin-top:5px;display:none;}
+  .cell.correct .fb,.cell.wrong .fb{display:block;}
+  .cell.correct .fb{color:var(--ok);} .cell.wrong .fb{color:var(--err);}
+  .actions{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
+  button{font-family:inherit;font-size:14.5px;font-weight:600;border:none;border-radius:8px;
+    padding:11px 20px;cursor:pointer;}
+  .btn-primary{background:var(--accent);color:#fff;} .btn-primary:hover{background:#173d5e;}
+  .btn-ghost{background:#fff;color:var(--accent);border:1px solid var(--accent);}
+  .btn-xls{background:var(--xls);color:#fff;} .btn-xls:hover{background:#1a5c38;}
+  .note{font-size:13px;color:var(--muted);margin-top:10px;}
+  .locked{opacity:.5;pointer-events:none;}
+  .hidden{display:none;}
+
+  /* Excel register */
+  .xlsbar{background:var(--xls);color:#fff;font-size:12px;font-weight:600;padding:6px 12px;border-radius:6px 6px 0 0;}
+  .xls-scroll{overflow-x:auto;border:1px solid var(--xls-line);border-top:none;border-radius:0 0 6px 6px;}
+  table.xls{border-collapse:collapse;width:100%;font-size:12.5px;min-width:760px;background:#fff;}
+  table.xls th,table.xls td{border:1px solid var(--xls-line);padding:6px 9px;text-align:left;vertical-align:top;}
+  table.xls thead th{background:var(--xls-head);font-weight:700;}
+  table.xls .rownum{background:var(--xls-num);text-align:center;color:var(--muted);font-weight:600;width:26px;}
+  table.xls .collet{background:var(--xls-num);text-align:center;color:var(--muted);font-weight:600;}
+  td.risk-alto{color:var(--err);font-weight:800;background:#fdeceb;}
+  td.date-red{color:var(--err);font-weight:800;background:#fdeceb;}
+
+  /* Monographic document */
+  #monoDoc{border:1px solid var(--line);border-radius:8px;padding:24px;font-size:13.5px;}
+  #monoDoc h3.mh{color:var(--accent);font-size:14.5px;border-bottom:1px solid var(--line);padding-bottom:4px;margin:18px 0 8px;}
+  #monoDoc .kv{display:grid;grid-template-columns:230px 1fr;gap:2px 14px;padding:4px 0;border-bottom:1px dotted var(--line);}
+  #monoDoc .kv .k{color:var(--muted);}
+  #monoDoc .kv .v{font-weight:600;}
+  #monoDoc .redflag{color:var(--err);font-weight:800;}
+  #monoDoc .subt{color:var(--muted);font-size:12.5px;margin:-6px 0 12px;}
+  #monoDoc .ph{color:var(--accent);font-style:italic;font-weight:500;}
+  .stamp{display:inline-block;padding:6px 14px;border-radius:6px;font-weight:700;font-size:13px;margin-bottom:12px;
+    color:var(--err);border:2px solid var(--err);background:var(--err-bg);}
+  .firme{margin-top:18px;font-size:13px;}
+  .firme .row{margin:10px 0;}
+  footer{font-size:12px;color:var(--muted);text-align:center;padding:10px;}
+  @media print{
+    body{background:#fff;padding:0;} .no-print{display:none !important;}
+    .sheet{border:none;box-shadow:none;} #monoDoc{border:none;padding:0;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="sheet">
+    <div class="top">
+      <div class="kicker">Corso IA e sicurezza sul lavoro · Modulo 1 · Serious game</div>
+      <h1>Censimento e classificazione dei sistemi di intelligenza artificiale</h1>
+    </div>
+    <div class="body">
+      <div class="legend">
+        <b>Come funziona la governance dei sistemi IA.</b> Ogni sistema va censito. Come <b>buona prassi
+        di governance interna</b>, i sistemi a <b>rischio limitato o minimo</b> si annotano come
+        <b>riga di un registro</b> (foglio Excel), mentre per i sistemi ad <b>alto rischio</b>
+        (e quelli inaccettabili, da non usare) è utile una <b>scheda monografica dedicata</b> di 2-3 pagine.<br>
+        <span class="note">La scheda non è un documento imposto dalla legge: la documentazione tecnica obbligatoria
+        (istruzioni per l'uso e fascicolo tecnico dell'AI Act) è quella del <b>fornitore</b>. La scheda ne richiama
+        i riferimenti e serve a documentare le misure adottate dall'azienda — sorveglianza umana, log, informativa,
+        aggiornamento del DVR.</span><br>
+        <span class="note">Cadenza di revisione: la legge impone un monitoraggio continuo ma non fissa un intervallo.
+        Adottiamo una convenzione interna prudenziale — <b>3 mesi</b> alto rischio, <b>6 mesi</b> rischio limitato,
+        <b>12 mesi</b> rischio minimo.</span>
+      </div>
+
+      <!-- ===================== PASSO 1 ===================== -->
+      <h2 class="sec">Passo 1 — Censisci e classifica i 3 sistemi</h2>
+      <p class="note" style="margin-top:-6px">Per ogni sistema scegli il <b>livello di rischio</b> (AI Act) e il
+        <b>tipo di documentazione</b> richiesta. Poi premi <b>Salva nel registro</b>.</p>
+
+      <form id="reg">
+        <!-- S1 -->
+        <div class="sys">
+          <h3>Sistema 1 — SmartTalent AI Selector</h3>
+          <div class="desc">Fornitore: TalentTech Solutions S.p.A. · Screening automatico dei CV e analisi delle risposte ai pre-colloqui, con punteggio di compatibilità usato dall'HR per selezionare i candidati.</div>
+          <div class="grid2">
+            <div>
+              <label class="f">Livello di rischio (AI Act)</label>
+              <div class="cell" data-correct="Alto rischio">
+                <select><option value="">— seleziona —</option><option>Inaccettabile</option><option>Alto rischio</option><option>Rischio limitato</option><option>Rischio minimo</option></select>
+                <div class="fb"></div>
+              </div>
+            </div>
+            <div>
+              <label class="f">Documentazione richiesta</label>
+              <div class="cell" data-correct="Scheda monografica dedicata">
+                <select><option value="">— seleziona —</option><option>Riga di registro</option><option>Scheda monografica dedicata</option></select>
+                <div class="fb"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- S2 -->
+        <div class="sys">
+          <h3>Sistema 2 — InfoHR Assistant</h3>
+          <div class="desc">Chatbot interno che risponde ai dipendenti su ferie, buste paga e procedure, attingendo ai documenti aziendali. Dichiara di essere un assistente virtuale.</div>
+          <div class="grid2">
+            <div>
+              <label class="f">Livello di rischio (AI Act)</label>
+              <div class="cell" data-correct="Rischio limitato">
+                <select><option value="">— seleziona —</option><option>Inaccettabile</option><option>Alto rischio</option><option>Rischio limitato</option><option>Rischio minimo</option></select>
+                <div class="fb"></div>
+              </div>
+            </div>
+            <div>
+              <label class="f">Documentazione richiesta</label>
+              <div class="cell" data-correct="Riga di registro">
+                <select><option value="">— seleziona —</option><option>Riga di registro</option><option>Scheda monografica dedicata</option></select>
+                <div class="fb"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- S3 -->
+        <div class="sys">
+          <h3>Sistema 3 — MailSort AI</h3>
+          <div class="desc">Filtro antispam e completamento automatico del testo delle email, incluso nella suite d'ufficio.</div>
+          <div class="grid2">
+            <div>
+              <label class="f">Livello di rischio (AI Act)</label>
+              <div class="cell" data-correct="Rischio minimo">
+                <select><option value="">— seleziona —</option><option>Inaccettabile</option><option>Alto rischio</option><option>Rischio limitato</option><option>Rischio minimo</option></select>
+                <div class="fb"></div>
+              </div>
+            </div>
+            <div>
+              <label class="f">Documentazione richiesta</label>
+              <div class="cell" data-correct="Riga di registro">
+                <select><option value="">— seleziona —</option><option>Riga di registro</option><option>Scheda monografica dedicata</option></select>
+                <div class="fb"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn-xls" id="saveReg">Salva nel registro</button>
+          <button type="button" class="btn-ghost" id="resetReg">Ricomincia</button>
+        </div>
+      </form>
+
+      <!-- Excel register output -->
+      <div id="regOut" class="hidden" style="margin-top:20px">
+        <div class="xlsbar">📊 registro-sistemi-ai.xlsx — foglio "Inventario"</div>
+        <div class="xls-scroll">
+          <table class="xls" id="regTable"></table>
+        </div>
+        <p class="note" id="regMsg"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PASSO 2 ===================== -->
+  <div class="sheet" id="step2" >
+    <div class="top" style="background:#7a2e2e">
+      <div class="kicker">Passo 2 · solo per il sistema ad alto rischio</div>
+      <h1>Scheda monografica — SmartTalent AI Selector</h1>
+    </div>
+    <div class="body">
+      <div id="step2lock" class="legend">Completa e salva il <b>Passo 1</b>: per il sistema ad alto rischio compiliamo questa scheda dedicata.</div>
+
+      <div id="step2form" class="locked">
+        <p class="note" style="margin-top:0">La scheda è già intestata e descritta. Completa i campi-chiave dei requisiti per l'alto rischio, poi premi <b>Verifica scheda</b>.</p>
+        <form id="mono">
+          <div class="sys">
+            <div class="grid2">
+              <div>
+                <label class="f">1 · Base giuridica AI Act (alto rischio)</label>
+                <div class="cell" data-correct="Allegato III, punto 4, lett. a) — reclutamento e selezione">
+                  <select><option value="">— seleziona —</option><option>Allegato III, punto 4, lett. a) — reclutamento e selezione</option><option>Art. 5 — pratica vietata</option><option>Nessuna base giuridica</option></select>
+                  <div class="fb"></div>
+                </div>
+              </div>
+              <div>
+                <label class="f">2 · Sorveglianza umana (art. 14)</label>
+                <div class="cell" data-correct="Human-in-the-loop: l'AI non scarta da sola, revisione umana">
+                  <select><option value="">— seleziona —</option><option>Human-in-the-loop: l'AI non scarta da sola, revisione umana</option><option>Decisione automatica senza revisione</option><option>Non prevista</option></select>
+                  <div class="fb"></div>
+                </div>
+              </div>
+              <div>
+                <label class="f">3 · Registrazione dei log (art. 12)</label>
+                <div class="cell" data-correct="Attiva, log conservati">
+                  <select><option value="">— seleziona —</option><option>Attiva, log conservati</option><option>Non attiva</option></select>
+                  <div class="fb"></div>
+                </div>
+              </div>
+              <div>
+                <label class="f">4 · DPIA — valutazione d'impatto privacy</label>
+                <div class="cell" data-correct="Redatta dal DPO">
+                  <select><option value="">— seleziona —</option><option>Redatta dal DPO</option><option>Non necessaria</option><option>Non redatta</option></select>
+                  <div class="fb"></div>
+                </div>
+              </div>
+              <div>
+                <label class="f">5 · Informativa ai candidati</label>
+                <div class="cell" data-correct="Aggiornata con clausola sull'uso di IA">
+                  <select><option value="">— seleziona —</option><option>Aggiornata con clausola sull'uso di IA</option><option>Non aggiornata</option></select>
+                  <div class="fb"></div>
+                </div>
+              </div>
+              <div>
+                <label class="f">6 · Misura contro il bias (art. 10)</label>
+                <div class="cell" data-correct="Dataset bilanciati e test anti-discriminazione">
+                  <select><option value="">— seleziona —</option><option>Dataset bilanciati e test anti-discriminazione</option><option>Nessuna misura</option></select>
+                  <div class="fb"></div>
+                </div>
+              </div>
+              <div>
+                <label class="f">7 · Procedura di emergenza (rollback)</label>
+                <div class="cell" data-correct="Disattivazione e ritorno alla valutazione manuale">
+                  <select><option value="">— seleziona —</option><option>Disattivazione e ritorno alla valutazione manuale</option><option>Nessuna procedura</option></select>
+                  <div class="fb"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn-primary" id="checkMono">Verifica scheda</button>
+            <button type="button" class="btn-ghost hidden" id="viewMono">Visualizza documento</button>
+          </div>
+          <p class="note" id="monoMsg"></p>
+        </form>
+      </div>
+
+      <!-- Monographic document -->
+      <div id="monoOut" class="hidden" style="margin-top:18px">
+        <div id="monoDoc"></div>
+        <div class="actions no-print" style="margin-top:14px">
+          <button type="button" class="btn-primary" id="printMono">Stampa scheda</button>
+          <button type="button" class="btn-xls" id="dlMono">Scarica scheda</button>
+          <button type="button" class="btn-ghost" id="closeMono">Torna alla compilazione</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="no-print">Compilazione a scopo formativo · nessun dato viene salvato</footer>
+</div>
+
+<script>
+(function(){
+  function shuffleSelects(){
+    Array.prototype.forEach.call(document.querySelectorAll('select'),function(sel){
+      var rest=Array.prototype.slice.call(sel.options).filter(function(o){return o.value!=='';});
+      for(var i=rest.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=rest[i];rest[i]=rest[j];rest[j]=t;}
+      rest.forEach(function(o){sel.removeChild(o);});
+      rest.forEach(function(o){sel.appendChild(o);});
+    });
+  }
+  shuffleSelects();
+  var BASE = new Date(2026,8,21); // 21/09/2026
+  var MONTHS = {'Alto rischio':3,'Rischio limitato':6,'Rischio minimo':12,'Inaccettabile':0};
+  function fmt(d){var g=('0'+d.getDate()).slice(-2),m=('0'+(d.getMonth()+1)).slice(-2);return g+'/'+m+'/'+d.getFullYear();}
+  function addMonths(d,n){var x=new Date(d.getTime());x.setMonth(x.getMonth()+n);return x;}
+
+  var SYS = [
+    {id:'AI-REG-2026-001',nome:'SmartTalent AI Selector',forn:'TalentTech Solutions S.p.A.',fin:'Screening CV e pre-colloqui'},
+    {id:'AI-REG-2026-002',nome:'InfoHR Assistant',forn:'Interno / SaaS',fin:'Chatbot informativo dipendenti'},
+    {id:'AI-REG-2026-003',nome:'MailSort AI',forn:'Suite d’ufficio',fin:'Antispam e completamento email'}
+  ];
+
+  // ---------- PASSO 1 ----------
+  var regCells = Array.prototype.slice.call(document.querySelectorAll('#reg .cell'));
+  function gradeCell(c){
+    var sel=c.querySelector('select'),want=c.getAttribute('data-correct'),got=sel.value,fb=c.querySelector('.fb');
+    c.classList.remove('correct','wrong');
+    if(got===want){c.classList.add('correct');fb.textContent='✓ corretto';return true;}
+    c.classList.add('wrong');fb.textContent=got?('✗ corretto: '+want):('✗ da compilare — corretto: '+want);return false;
+  }
+  document.getElementById('saveReg').addEventListener('click',function(){
+    regCells.forEach(gradeCell);
+    buildRegister();
+    document.getElementById('regOut').classList.remove('hidden');
+    // sblocca passo 2
+    document.getElementById('step2lock').classList.add('hidden');
+    document.getElementById('step2form').classList.remove('locked');
+    document.getElementById('regOut').scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+  document.getElementById('resetReg').addEventListener('click',function(){
+    regCells.forEach(function(c){c.classList.remove('correct','wrong');c.querySelector('select').value='';});
+    document.getElementById('regOut').classList.add('hidden');
+  });
+
+  function selVal(i,j){ // i=system index, j=0 rischio /1 doc
+    return document.querySelectorAll('#reg .sys')[i].querySelectorAll('select')[j].value;
+  }
+  function buildRegister(){
+    var cols=['','A','B','C','D','E','F','G','H'];
+    var head=['#','ID','Sistema','Fornitore','Finalità','Livello di rischio','Documentazione','Ultima revisione','Prossima revisione'];
+    var t=document.getElementById('regTable');
+    var html='<thead><tr>';
+    cols.forEach(function(c,k){html+='<th class="collet">'+(k===0?'':c)+'</th>';});
+    html+='</tr><tr>';
+    head.forEach(function(h,k){html+='<th'+(k===0?' class="rownum"':'')+'>'+h+'</th>';});
+    html+='</tr></thead><tbody>';
+    for(var i=0;i<3;i++){
+      var lvl=selVal(i,0), doc=selVal(i,1);
+      var months=MONTHS[lvl]||0;
+      var next = months? fmt(addMonths(BASE,months)) : '—';
+      var riskCls = (lvl==='Alto rischio')?' class="risk-alto"':'';
+      var dateCls = (lvl==='Alto rischio')?' class="date-red"':'';
+      html+='<tr>';
+      html+='<td class="rownum">'+(i+2)+'</td>';
+      html+='<td>'+SYS[i].id+'</td><td>'+SYS[i].nome+'</td><td>'+SYS[i].forn+'</td><td>'+SYS[i].fin+'</td>';
+      html+='<td'+riskCls+'>'+(lvl||'—')+'</td>';
+      html+='<td>'+(doc||'—')+'</td>';
+      html+='<td>'+fmt(BASE)+'</td>';
+      html+='<td'+dateCls+'>'+next+'</td>';
+      html+='</tr>';
+    }
+    html+='</tbody>';
+    t.innerHTML=html;
+    document.getElementById('regMsg').innerHTML='<b>Nota.</b> L\'AI Act non impone termini per le revisioni: esso impone il <b>monitoraggio continuo</b> dei sistemi, ma per la presente esercitazione, oltre al monitoraggio continuo, abbiamo inserito i termini per le revisioni (<b>3 mesi</b> per rischio alto, <b>6 mesi</b> per rischio intermedio e <b>12 mesi</b> per il rischio basso). In questo specifico esempio il sistema ad <b>alto rischio</b> ha il livello e la prossima revisione evidenziati in rosso (cadenza 3 mesi) e per esso compiliamo la <b>scheda monografica</b> del Passo 2. Gli altri due restano righe di registro.';
+  }
+
+  // ---------- PASSO 2 ----------
+  var monoCells = Array.prototype.slice.call(document.querySelectorAll('#mono .cell'));
+  document.getElementById('checkMono').addEventListener('click',function(){
+    var ok=0; monoCells.forEach(function(c){ if(gradeCell(c)) ok++; });
+    var msg=document.getElementById('monoMsg');
+    if(ok===monoCells.length){
+      msg.textContent='Scheda completa e conforme ai requisiti per l’alto rischio. Ora puoi visualizzare e stampare il documento.';
+      document.getElementById('viewMono').classList.remove('hidden');
+    } else {
+      msg.textContent='Punteggio '+ok+'/'+monoCells.length+'. Correggi i campi in rosso: per un sistema ad alto rischio ogni requisito degli artt. 9-15 va soddisfatto.';
+      document.getElementById('viewMono').classList.add('hidden');
+    }
+  });
+
+  function val(i){return monoCells[i].querySelector('select').value;}
+  document.getElementById('viewMono').addEventListener('click',function(){
+    var next=fmt(addMonths(BASE,3));
+    var d=document.getElementById('monoDoc');
+    d.innerHTML = `
+      <span class="stamp">🔴 SCHEDA MONOGRAFICA SISTEMA AI — RISCHIO ELEVATO</span>
+      <div class="subt">(Ai sensi del Regolamento UE 2024/1689 — AI Act)</div>
+      <div class="kv"><span class="k">ID Documento</span><span class="v">AI-REG-2026-001</span></div>
+      <div class="kv"><span class="k">Data Censimento</span><span class="v">21/09/2026</span></div>
+      <div class="kv"><span class="k">Responsabile del Sistema (AI Owner)</span><span class="v">Dott.ssa Elena Rossi (Direzione HR)</span></div>
+      <div class="kv"><span class="k">Stato</span><span class="v">In uso (Approvato in produzione)</span></div>
+      <div class="kv"><span class="k">Prossima Revisione</span><span class="v redflag">21/12/2026 (Cadenza: trimestrale)</span></div>
+
+      <h3 class="mh">1 · Anagrafica e funzionalità</h3>
+      <div class="kv"><span class="k">Nome del Sistema</span><span class="v">SmartTalent AI Selector (v2.1)</span></div>
+      <div class="kv"><span class="k">Fornitore</span><span class="v">TalentTech Solutions S.p.A. (Erogato in modalità SaaS esterno su infrastruttura Cloud)</span></div>
+      <div class="kv"><span class="k">Documentazione del fornitore</span><span class="v">Istruzioni per l'uso (art. 13 AI Act), fascicolo/documentazione tecnica (Allegato IV), dichiarazione di conformità UE e marcatura CE acquisite e conservate agli atti (Rif. <span class="ph">[protocollo/versione]</span>). Questa scheda ne richiama i riferimenti: la documentazione tecnica obbligatoria resta in capo al fornitore.</span></div>
+      <div class="kv"><span class="k">Finalità</span><span class="v">Screening automatizzato dei CV e analisi semantica delle risposte ai pre-colloqui digitali. Il sistema calcola uno score di compatibilità (valore da 1 a 100) basandosi sul matching tra le competenze del candidato e la job description aziendale.</span></div>
+
+      <h3 class="mh">2 · Architettura e flusso dati</h3>
+      <div class="kv"><span class="k">Modello</span><span class="v">Modello NLP (Natural Language Processing) proprietario basato su architettura Transformer, integrato tramite API protette a servizi cloud di terze parti per l'estrazione del testo.</span></div>
+      <div class="kv"><span class="k">Input</span><span class="v">Dati anagrafici, curricula (PDF/Word), lettere di presentazione, risposte testuali digitate dai candidati nei questionari attitudinali.</span></div>
+      <div class="kv"><span class="k">Output</span><span class="v">Score di compatibilità percentuale, report sintetico dei punti di forza/debolezza del candidato, classificazione automatica in tre cluster di graduatoria ("Idoneo", "In lista d'attesa", "Non idoneo").</span></div>
+
+      <h3 class="mh">3 · Classificazione del rischio (AI Act)</h3>
+      <div class="kv"><span class="k">Livello di Rischio</span><span class="v redflag">RISCHIO ELEVATO</span></div>
+      <div class="kv"><span class="k">Base Giuridica</span><span class="v">Allegato III, punto 4, lett. a) del Regolamento UE 2024/1689 (Sistemi di IA destinati a essere utilizzati per il reclutamento o la selezione delle persone fisiche).</span></div>
+      <div class="kv"><span class="k">ID Registro UE</span><span class="v ph">[Inserire qui il codice identificativo ottenuto dopo l'iscrizione del sistema nel database pubblico europeo delle IA ad alto rischio].</span></div>
+
+      <h3 class="mh">4 · Requisiti high-risk obbligatori (artt. 9-15 AI Act)</h3>
+      <div class="kv"><span class="k">Sorveglianza Umana (Art. 14)</span><span class="v">Human-in-the-loop. L'algoritmo non adotta decisioni di scarto automatizzato: la graduatoria generata è una mera raccomandazione. I profili contrassegnati come "Non idonei" vengono sottoposti a verifica manuale a campione (minimo 20%) da parte dei recruiter. I recruiter (Dott.ssa Rossi e team HR designato) hanno l'autorità e lo strumento tecnico per sovrascrivere lo score dell'AI e ammettere il candidato alle fasi successive.</span></div>
+      <div class="kv"><span class="k">Registrazione dei Log (Art. 12)</span><span class="v">Sistema di logging nativo e automatico. Vengono registrati: ID operatore, ID candidato elaborato, timestamp di inizio/fine elaborazione, score assegnato e modifiche manuali apportate dall'umano. I log sono archiviati in modo inalterabile sul server aziendale <span class="ph">[Nome Server/Cloud]</span> e conservati per 6 mesi per finalità di audit.</span></div>
+      <div class="kv"><span class="k">Misura Anti-Bias e Governance Dati (Art. 10)</span><span class="v">Il fornitore ha rilasciato formale "Certificato di Assenza di Bias" (Rif. Allegato Tecnico TTS-BIAS-2026). I dataset di addestramento sono stati bilanciati per genere, età e nazionalità. L'azienda esegue internamente test di validazione trimestrali sulle percentuali di promossi/bocciati per verificare che il software non penalizzi specifiche categorie protette.</span></div>
+
+      <h3 class="mh">5 · Privacy (GDPR) e sicurezza informatica</h3>
+      <div class="kv"><span class="k">DPIA (Art. 35 GDPR)</span><span class="v">Redatta dal Data Protection Officer (DPO) in data 04/09/2026 (Codice Registro DPIA: DPIA-HR-AI-002). Il rischio residuo è stato valutato come Basso a fronte delle misure di sorveglianza umana implementate.</span></div>
+      <div class="kv"><span class="k">Informativa Candidati (Artt. 13-14 GDPR)</span><span class="v">L'informativa sul portale "Lavora con noi" è stata aggiornata con una sezione specifica che illustra la logica dell'algoritmo, i criteri di scoring e il diritto del candidato di richiedere un intervento umano e di contestare la decisione.</span></div>
+      <div class="kv"><span class="k">Sicurezza e Fascicolo Tecnico (Art. 11)</span><span class="v">Il Fascicolo Tecnico è custodito digitalmente nella cartella cifrata dell'ufficio IT. I dati in transito verso le API sono protetti da crittografia HTTPS TLS 1.3; i dati a riposo sono cifrati con standard AES-256.</span></div>
+
+      <h3 class="mh">6 · Monitoraggio continuo e rollback</h3>
+      <div class="kv"><span class="k">Revisione Performance</span><span class="v">Controlli trimestrali (prossimo: <span class="redflag">21/12/2026</span>) affidati a un comitato HR e IT per monitorare l'accuratezza del modello e l'eventuale deriva del software (data drift).</span></div>
+      <div class="kv"><span class="k">Procedura di Emergenza (Rollback)</span><span class="v">In caso di anomalie bloccanti, alterazione sospetta dei punteggi o rilevazione di bias discriminatori, l'amministratore IT revoca immediatamente i token API di SmartTalent. Il processo di selezione viene congelato e reindirizzato al 100% sulla valutazione manuale classica tramite il gestionale ATS standard.</span></div>
+
+      <h3 class="mh">Firme per approvazione ed entrata in vigore</h3>
+      <div class="firme">
+        <div class="row">AI Owner (Direzione HR): ______________________  Data: ___________</div>
+        <div class="row">Data Protection Officer: ______________________  Data: ___________</div>
+        <div class="row">Responsabile IT &amp; Cybersecurity: ______________________  Data: ___________</div>
+      </div>`;
+    document.getElementById('monoOut').classList.remove('hidden');
+    document.getElementById('monoOut').scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+  document.getElementById('printMono').addEventListener('click',function(){window.print();});
+  document.getElementById('dlMono').addEventListener('click',function(){
+    var inner=document.getElementById('monoDoc').innerHTML;
+    var css='body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1f2733;max-width:760px;margin:24px auto;padding:0 20px;line-height:1.5;font-size:13.5px}'+
+      'h3.mh{color:#1f4e79;font-size:14.5px;border-bottom:1px solid #d5dbe3;padding-bottom:4px;margin:18px 0 8px}'+
+      '.kv{display:grid;grid-template-columns:230px 1fr;gap:2px 14px;padding:4px 0;border-bottom:1px dotted #d5dbe3}'+
+      '.kv .k{color:#5b6673}.kv .v{font-weight:600}.redflag{color:#c0261e;font-weight:800}.subt{color:#5b6673;font-size:12.5px;margin:-6px 0 12px}.ph{color:#1f4e79;font-style:italic}'+
+      '.stamp{display:inline-block;padding:6px 14px;border-radius:6px;font-weight:700;font-size:13px;margin-bottom:12px;color:#c0261e;border:2px solid #c0261e;background:#fbeae9}'+
+      '.firme{margin-top:18px;font-size:13px}.firme .row{margin:10px 0}';
+    var html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Scheda monografica — SmartTalent AI Selector</title><style>'+css+'</style></head><body>'+inner+'</body></html>';
+    var blob=new Blob([html],{type:'text/html'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download='scheda-monografica-SmartTalent.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+  document.getElementById('closeMono').addEventListener('click',function(){document.getElementById('monoOut').classList.add('hidden');});
+})();
+</script>
+</body>
+</html>
